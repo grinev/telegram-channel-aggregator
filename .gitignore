@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.env
+
+*.js.map
+*.d.ts
+*.tsbuildinfo
+
+.kilo/
+.kilocode/
+.claude/
+.opencode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
