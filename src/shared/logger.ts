@@ -53,3 +53,4 @@ class Logger {
 }
 
 export const createLogger = (level: string): Logger => new Logger(level);
+export type { Logger };

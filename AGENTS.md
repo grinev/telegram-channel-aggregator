@@ -38,6 +38,15 @@ npm run lint
 
 # Type check
 npm run typecheck
+
+# Test
+npm run test
+
+# Test (watch mode)
+npm run test:watch
+
+# Test with coverage
+npm run test:coverage
 ```
 
 ## Code Style
@@ -64,21 +73,24 @@ src/
   shared/
     logger.ts          # Logging utility
     types.ts           # Shared TypeScript interfaces/types
+tests/
+  unit/                # Unit tests for isolated modules
+  integration/         # Integration tests with mocked Telegram APIs
 ```
 
 ## Environment Variables
 
 All config via `.env`:
 
-| Variable | Description |
-|---|---|
-| `TELEGRAM_API_ID` | Telegram API ID (from my.telegram.org) |
-| `TELEGRAM_API_HASH` | Telegram API Hash (from my.telegram.org) |
-| `TELEGRAM_STRING_SESSION` | StringSession for the reader account |
-| `TELEGRAM_BOT_TOKEN` | Bot token for the writer (from @BotFather) |
-| `TELEGRAM_AGGREGATOR_CHANNEL` | Target aggregator channel (username or ID) |
-| `SOURCE_CHANNELS` | Comma-separated list of source channel usernames/IDs |
-| `LOG_LEVEL` | Logging level (default: `info`) |
+| Variable                      | Description                                          |
+| ----------------------------- | ---------------------------------------------------- |
+| `TELEGRAM_API_ID`             | Telegram API ID (from my.telegram.org)               |
+| `TELEGRAM_API_HASH`           | Telegram API Hash (from my.telegram.org)             |
+| `TELEGRAM_STRING_SESSION`     | StringSession for the reader account                 |
+| `TELEGRAM_BOT_TOKEN`          | Bot token for the writer (from @BotFather)           |
+| `TELEGRAM_AGGREGATOR_CHANNEL` | Target aggregator channel (username or ID)           |
+| `SOURCE_CHANNELS`             | Comma-separated list of source channel usernames/IDs |
+| `LOG_LEVEL`                   | Logging level (default: `info`)                      |
 
 ## Key Implementation Details
 
@@ -91,7 +103,12 @@ All config via `.env`:
 
 ## Testing
 
-No framework decided yet. When tests are added, follow existing patterns.
+- **Framework:** Vitest (native TypeScript + ESM support)
+- **Test location:** `tests/` directory with `.test.ts` suffix
+- **Structure:** `tests/unit/` for isolated module tests, `tests/integration/` for integration tests with mocked Telegram APIs
+- **Happy-path focus:** Tests verify successful scenarios first, then edge cases
+- **Mocking:** Use `vi.mock()` for external dependencies (GramJS, grammY, Telegram API)
+- **No real API calls:** All tests must run without network access or real credentials
 
 ## Git Conventions
 
