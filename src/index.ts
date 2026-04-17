@@ -2,7 +2,7 @@ import { config } from './config.js';
 import { createLogger } from './shared/logger.js';
 import { createProducerClient } from './producer/client.js';
 import { setupMessageListener } from './producer/listener.js';
-import type { MessageDispatch } from './shared/types.js';
+import { createConsumerBot } from './consumer/bot.js';
 
 async function main(): Promise<void> {
   const logger = createLogger(config.logLevel);
@@ -11,14 +11,9 @@ async function main(): Promise<void> {
 
   try {
     const { client, disconnect } = await createProducerClient(config, logger);
+    const { forward } = createConsumerBot(config, logger);
 
-    function stubConsumerDispatch(dispatch: MessageDispatch): void {
-      logger.info(
-        `[STUB] Would forward post: channel=${dispatch.chatId}, message=${dispatch.messageId}`,
-      );
-    }
-
-    setupMessageListener(client, config.sourceChannels, logger, stubConsumerDispatch);
+    setupMessageListener(client, config.sourceChannels, logger, forward);
 
     async function shutdown(signal: string): Promise<void> {
       logger.info(`Received ${signal}, shutting down...`);
