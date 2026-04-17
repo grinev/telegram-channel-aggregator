@@ -13,7 +13,8 @@
     "format": "prettier --write src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "session:generate": "tsx scripts/generate-session.ts"
   },
   "repository": {
     "type": "git",
