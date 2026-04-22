@@ -3,13 +3,29 @@ import { createLogger } from './shared/logger.js';
 import { createProducerClient } from './producer/client.js';
 import { setupMessageListener } from './producer/listener.js';
 import { createConsumerBot } from './consumer/bot.js';
+import { startPolling } from './poller/scheduler.js';
 
 async function main(): Promise<void> {
   const logger = createLogger(config.logLevel);
 
   logger.info('Starting Telegram Channel Aggregator...');
+  logger.info(`Fetch mode: ${config.fetchMode}`);
 
-  try {
+  if (config.fetchMode === 'polling') {
+    const { forward } = createConsumerBot(config, logger);
+    const scheduler = startPolling(config, forward, logger);
+
+    async function shutdown(signal: string): Promise<void> {
+      logger.info(`Received ${signal}, shutting down...`);
+      scheduler.stop();
+      process.exit(0);
+    }
+
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+    logger.info('Aggregator is running in polling mode. Press Ctrl+C to stop.');
+  } else {
     const { client, disconnect } = await createProducerClient(config, logger);
     const { forward } = createConsumerBot(config, logger);
 
@@ -24,11 +40,12 @@ async function main(): Promise<void> {
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-    logger.info('Aggregator is running. Press Ctrl+C to stop.');
-  } catch (error) {
-    logger.error(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
-    process.exit(1);
+    logger.info('Aggregator is running in event mode. Press Ctrl+C to stop.');
   }
 }
 
-main();
+main().catch((error) => {
+  const logger = createLogger(config.logLevel);
+  logger.error(`Fatal error: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+});

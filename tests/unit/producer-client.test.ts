@@ -64,6 +64,9 @@ const mockConfig = {
   aggregatorChannel: '@test-channel',
   sourceChannels: ['@channel1', '@channel2'],
   logLevel: 'info',
+  fetchMode: 'event',
+  pollIntervalMs: 900000,
+  channelStateFile: 'channel-state.json',
 };
 
 const mockLogger = {

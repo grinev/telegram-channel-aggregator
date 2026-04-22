@@ -6,6 +6,9 @@ dist/
 *.d.ts
 *.tsbuildinfo
 
+channel-state.json
+channel-state.json.tmp
+
 .kilo/
 .kilocode/
 .claude/

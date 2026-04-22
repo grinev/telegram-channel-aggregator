@@ -38,13 +38,13 @@ vi.mock('grammy', () => {
 });
 
 const mockConfig = {
-  apiId: 12345,
-  apiHash: 'test-api-hash',
-  stringSession: 'test-string-session',
   botToken: 'test-bot-token',
   aggregatorChannel: '@test-channel',
   sourceChannels: ['@channel1', '@channel2'],
   logLevel: 'info',
+  fetchMode: 'event',
+  pollIntervalMs: 900000,
+  channelStateFile: 'channel-state.json',
 };
 
 const mockLogger = {

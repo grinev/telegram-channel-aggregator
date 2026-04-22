@@ -12,9 +12,9 @@ export async function createProducerClient(
   config: AppConfig,
   logger: Logger,
 ): Promise<ProducerClient> {
-  const session = new sessions.StringSession(config.stringSession);
+  const session = new sessions.StringSession(config.stringSession!);
 
-  const client = new TelegramClient(session, config.apiId, config.apiHash, {
+  const client = new TelegramClient(session, config.apiId!, config.apiHash!, {
     connectionRetries: CONNECTION_RETRIES,
     reconnectRetries: RECONNECT_RETRIES,
     retryDelay: RETRY_DELAY,
