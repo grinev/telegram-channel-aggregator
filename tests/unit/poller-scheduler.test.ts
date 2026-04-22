@@ -19,7 +19,7 @@ const mockConfig = {
   sourceChannels: ['@channel1', '@channel2'],
   logLevel: 'info',
   fetchMode: 'polling',
-  pollIntervalMs: 900000,
+  pollIntervalMs: 300000,
   channelStateFile: 'test-state.json',
 };
 

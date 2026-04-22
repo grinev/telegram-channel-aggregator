@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import type { AppConfig } from './shared/types.js';
 
-const fetchMode = process.env.FETCH_MODE ?? 'event';
+const fetchMode = process.env.FETCH_MODE ?? 'polling';
 
 const commonRequired = [
   'TELEGRAM_BOT_TOKEN',
@@ -36,7 +36,7 @@ if (apiId !== undefined && !Number.isInteger(apiId)) {
   throw new Error('TELEGRAM_API_ID must be a valid integer');
 }
 
-const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '900000');
+const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS ?? '300000');
 
 if (!Number.isInteger(pollIntervalMs) || pollIntervalMs <= 0) {
   throw new Error('POLL_INTERVAL_MS must be a valid positive integer');
