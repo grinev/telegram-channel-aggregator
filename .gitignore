@@ -4,6 +4,7 @@ dist/
 
 *.js.map
 *.d.ts
+!src/types/*.d.ts
 *.tsbuildinfo
 
 channel-state.json
