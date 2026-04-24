@@ -275,4 +275,36 @@ describe('startPolling', () => {
 
     scheduler.stop();
   }, 15000);
+
+  it('should remove stale channels from state', async () => {
+    (loadState as any).mockReturnValue({
+      activechannel: { lastMessageId: 100 },
+      removedchannel: { lastMessageId: 200 },
+    });
+    (loadChannels as any).mockReturnValue(['activechannel']);
+    (fetchChannelPosts as any).mockResolvedValue({
+      postIds: [101, 100],
+      channelUsername: 'activechannel',
+    });
+
+    const scheduler = startPolling(mockConfig, mockForwardFn, mockLogger);
+
+    await sleep(5000);
+
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Removed 1 channel(s) from state: removedchannel'),
+    );
+    expect(saveState).toHaveBeenCalledWith(
+      'test-state.json',
+      expect.objectContaining({ activechannel: { lastMessageId: 101 } }),
+      mockLogger,
+    );
+    expect(saveState).not.toHaveBeenCalledWith(
+      'test-state.json',
+      expect.objectContaining({ removedchannel: expect.anything() }),
+      mockLogger,
+    );
+
+    scheduler.stop();
+  }, 15000);
 });

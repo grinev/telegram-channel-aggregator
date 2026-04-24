@@ -43,6 +43,19 @@ export function startPolling(
       return;
     }
 
+    const activeChannels = new Set(sourceChannels.map((ch) => ch.replace(/^@/, '')));
+    const removedChannels: string[] = [];
+    for (const channel of Object.keys(state)) {
+      if (!activeChannels.has(channel)) {
+        delete state[channel];
+        removedChannels.push(channel);
+      }
+    }
+    if (removedChannels.length > 0) {
+      logger.info(`Removed ${removedChannels.length} channel(s) from state: ${removedChannels.join(', ')}`);
+      saveState(config.channelStateFile, state, logger);
+    }
+
     try {
       for (const channel of sourceChannels) {
         const cleanChannel = channel.replace(/^@/, '');
