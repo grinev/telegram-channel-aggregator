@@ -5,10 +5,11 @@ A service that monitors new posts from specified Telegram channels and automatic
 ## Features
 
 - **No user account required** — works with just a bot token
-- **Lightweight polling** — fetches public channel previews via HTTP every 15 minutes
+- **Lightweight polling** — fetches public channel previews via HTTP every 5 minutes
 - **Persistent state** — remembers the last forwarded post ID per channel
 - **Smart forwarding** — only forwards new posts since the last check
 - **First-run safe** — initializes state without flooding the aggregator
+- **Dynamic channel management** — add/remove channels via bot commands without restart
 
 ## Prerequisites
 
@@ -35,7 +36,7 @@ Edit `.env` with your values:
 ```env
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 TELEGRAM_AGGREGATOR_CHANNEL=@your_aggregator_channel
-SOURCE_CHANNELS=@channel1,@channel2,@channel3
+ALLOWED_USER_IDS=your_telegram_user_id
 ```
 
 ### 3. Run
@@ -49,13 +50,38 @@ npm run build
 npm start
 ```
 
+### 4. Add channels
+
+Send commands to your bot in Telegram:
+
+```
+/add_channel @channel1
+/add_channel @channel2
+/list_channels
+```
+
+## Managing Channels
+
+Channels are managed at runtime via bot commands. No restart needed.
+
+| Command | Description |
+|---|---|
+| `/add_channel @channel` | Add a channel to monitoring. Bot verifies it has admin access. |
+| `/remove_channel @channel` | Remove a channel from monitoring. |
+| `/list_channels` | Show the current list of monitored channels. |
+
+Only users listed in `ALLOWED_USER_IDS` can use these commands.
+
+Channels are stored in `channels.txt` (configurable via `CHANNELS_FILE`), one channel per line without `@` prefix. The file is created automatically on first `/add_channel`.
+
 ## How It Works
 
 The service uses **polling mode** (the default):
 
-1. Every 15 minutes, it fetches the latest posts from each source channel via `https://t.me/s/{channel}`
-2. Compares post IDs against a local JSON state file (`channel-state.json`)
-3. Forwards only new posts to the aggregator channel via Bot API
+1. Every 5 minutes, it reads the channel list from `channels.txt`
+2. Fetches the latest posts from each channel via `https://t.me/s/{channel}`
+3. Compares post IDs against a local JSON state file (`channel-state.json`)
+4. Forwards only new posts to the aggregator channel via Bot API
 
 ### First Run Behavior
 
@@ -75,9 +101,10 @@ On subsequent runs:
 |---|---|---|---|
 | `TELEGRAM_BOT_TOKEN` | Yes | — | Bot token from @BotFather |
 | `TELEGRAM_AGGREGATOR_CHANNEL` | Yes | — | Target aggregator channel (username or ID) |
-| `SOURCE_CHANNELS` | Yes | — | Comma-separated list of source channel usernames |
+| `ALLOWED_USER_IDS` | Yes | — | Comma-separated Telegram user IDs that can manage channels |
+| `CHANNELS_FILE` | No | `channels.txt` | Path to the file storing channel list |
 | `FETCH_MODE` | No | `polling` | Mode: `polling` or `event` |
-| `POLL_INTERVAL_MS` | No | `300000` | Polling interval in milliseconds (15 min) |
+| `POLL_INTERVAL_MS` | No | `300000` | Polling interval in milliseconds (5 min) |
 | `CHANNEL_STATE_FILE` | No | `channel-state.json` | Path to state file |
 | `LOG_LEVEL` | No | `info` | Logging level: debug, info, warn, error |
 

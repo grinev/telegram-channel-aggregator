@@ -69,7 +69,12 @@ src/
     client.ts          # GramJS client init, StringSession auth
     listener.ts        # NewMessage event handler, dispatch to consumer
   consumer/
-    bot.ts             # grammY bot init, forwardMessage logic
+    bot.ts             # grammY bot init, forwardMessage, channel management commands
+  poller/
+    scheduler.ts       # Polling cycle: iterate channels, fetch posts, forward new ones
+    channel-fetcher.ts # HTTP fetch of public channel preview pages
+    state-store.ts     # Read/write channel-state.json (last seen message IDs)
+    whitelist-store.ts # Read/write channels.txt (managed channel list)
   shared/
     logger.ts          # Logging utility
     types.ts           # Shared TypeScript interfaces/types
@@ -89,13 +94,15 @@ All config via `.env`:
 | `TELEGRAM_STRING_SESSION`     | StringSession for the reader account                 |
 | `TELEGRAM_BOT_TOKEN`          | Bot token for the writer (from @BotFather)           |
 | `TELEGRAM_AGGREGATOR_CHANNEL` | Target aggregator channel (username or ID)           |
-| `SOURCE_CHANNELS`             | Comma-separated list of source channel usernames/IDs |
+| `ALLOWED_USER_IDS`            | Comma-separated Telegram user IDs that can manage channels via bot commands |
+| `CHANNELS_FILE`               | Path to channels list file (default: `channels.txt`) |
 | `LOG_LEVEL`                   | Logging level (default: `info`)                      |
 
 ## Key Implementation Details
 
 - **forwardMessage** is used for publishing (preserves original author attribution)
-- Source channels are configured in `.env` as a comma-separated list (must match the technical account's subscriptions)
+- Source channels are managed dynamically via bot commands (`/add_channel`, `/remove_channel`, `/list_channels`) and stored in `channels.txt`
+- Only users listed in `ALLOWED_USER_IDS` can manage channels
 - The Reader connects via MTProto and listens for `NewMessage` events only from the configured source channels
 - The Writer receives dispatches and calls `forwardMessage` to the aggregator channel
 - Single aggregator channel — all posts from all sources go to one destination

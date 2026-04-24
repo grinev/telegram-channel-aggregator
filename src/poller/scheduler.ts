@@ -1,6 +1,7 @@
 import type { MessageDispatch, AppConfig } from '../shared/types.js';
 import type { Logger } from '../shared/logger.js';
 import { loadState, saveState } from './state-store.js';
+import { loadChannels } from './whitelist-store.js';
 import { fetchChannelPosts } from './channel-fetcher.js';
 
 const DELAY_BETWEEN_CHANNELS_MS = 2000;
@@ -26,8 +27,16 @@ export function startPolling(
     isRunning = true;
     logger.info('Starting polling cycle...');
 
+    const sourceChannels = loadChannels(config.channelsFile, logger);
+
+    if (sourceChannels.length === 0) {
+      logger.warn('No channels configured, skipping polling cycle');
+      isRunning = false;
+      return;
+    }
+
     try {
-      for (const channel of config.sourceChannels) {
+      for (const channel of sourceChannels) {
         const cleanChannel = channel.replace(/^@/, '');
 
         try {

@@ -6,7 +6,7 @@ const fetchMode = process.env.FETCH_MODE ?? 'polling';
 const commonRequired = [
   'TELEGRAM_BOT_TOKEN',
   'TELEGRAM_AGGREGATOR_CHANNEL',
-  'SOURCE_CHANNELS',
+  'ALLOWED_USER_IDS',
 ] as const;
 
 const missing = commonRequired.filter((key) => !process.env[key]);
@@ -42,16 +42,19 @@ if (!Number.isInteger(pollIntervalMs) || pollIntervalMs <= 0) {
   throw new Error('POLL_INTERVAL_MS must be a valid positive integer');
 }
 
+const allowedUserIds = process.env
+  .ALLOWED_USER_IDS!.split(',')
+  .map((id) => Number(id.trim()))
+  .filter((id) => !isNaN(id) && id > 0);
+
 export const config: AppConfig = {
   apiId,
   apiHash: process.env.TELEGRAM_API_HASH,
   stringSession: process.env.TELEGRAM_STRING_SESSION,
   botToken: process.env.TELEGRAM_BOT_TOKEN!,
   aggregatorChannel: process.env.TELEGRAM_AGGREGATOR_CHANNEL!,
-  sourceChannels: process.env
-    .SOURCE_CHANNELS!.split(',')
-    .map((channel) => channel.trim())
-    .filter(Boolean),
+  allowedUserIds,
+  channelsFile: process.env.CHANNELS_FILE ?? 'channels.txt',
   logLevel: process.env.LOG_LEVEL ?? 'info',
   fetchMode,
   pollIntervalMs,

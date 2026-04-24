@@ -6,7 +6,8 @@ export interface AppConfig {
   stringSession?: string;
   botToken: string;
   aggregatorChannel: string;
-  sourceChannels: string[];
+  allowedUserIds: number[];
+  channelsFile: string;
   logLevel: string;
   fetchMode: string;
   pollIntervalMs: number;

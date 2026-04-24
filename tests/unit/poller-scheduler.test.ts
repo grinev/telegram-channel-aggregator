@@ -10,13 +10,19 @@ vi.mock('../../src/poller/channel-fetcher.js', () => ({
   fetchChannelPosts: vi.fn(),
 }));
 
+vi.mock('../../src/poller/whitelist-store.js', () => ({
+  loadChannels: vi.fn(),
+}));
+
 const { loadState, saveState } = await import('../../src/poller/state-store.js');
 const { fetchChannelPosts } = await import('../../src/poller/channel-fetcher.js');
+const { loadChannels } = await import('../../src/poller/whitelist-store.js');
 
 const mockConfig = {
   botToken: 'test-bot-token',
   aggregatorChannel: '@test-channel',
-  sourceChannels: ['@channel1', '@channel2'],
+  allowedUserIds: [12345],
+  channelsFile: 'channels.txt',
   logLevel: 'info',
   fetchMode: 'polling',
   pollIntervalMs: 300000,
@@ -39,6 +45,7 @@ function sleep(ms: number): Promise<void> {
 describe('startPolling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (loadChannels as any).mockReturnValue(['channel1', 'channel2']);
   });
 
   it('should skip forwarding on first run for a channel', async () => {
@@ -129,9 +136,7 @@ describe('startPolling', () => {
 
     await sleep(5000);
 
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Error polling'),
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error polling'));
     expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@channel2', messageId: 201 });
 
     scheduler.stop();
@@ -157,9 +162,7 @@ describe('startPolling', () => {
 
     await sleep(5000);
 
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to forward'),
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to forward'));
     expect(mockForwardFn).toHaveBeenCalledTimes(1);
 
     scheduler.stop();
@@ -171,9 +174,7 @@ describe('startPolling', () => {
 
     scheduler.stop();
 
-    expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Polling scheduler stopped'),
-    );
+    expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Polling scheduler stopped'));
   });
 
   it('should skip channels with no posts', async () => {
@@ -200,4 +201,37 @@ describe('startPolling', () => {
 
     scheduler.stop();
   }, 15000);
+
+  it('should read channels from whitelist store on each cycle', async () => {
+    (loadState as any).mockReturnValue({});
+    (fetchChannelPosts as any).mockResolvedValue({
+      postIds: [100],
+      channelUsername: 'channel1',
+    });
+
+    const scheduler = startPolling(mockConfig, mockForwardFn, mockLogger);
+
+    await sleep(500);
+
+    expect(loadChannels).toHaveBeenCalledWith('channels.txt', mockLogger);
+
+    scheduler.stop();
+  });
+
+  it('should skip cycle when no channels configured', async () => {
+    (loadChannels as any).mockReturnValue([]);
+    (loadState as any).mockReturnValue({});
+
+    const scheduler = startPolling(mockConfig, mockForwardFn, mockLogger);
+
+    await sleep(500);
+
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      'No channels configured, skipping polling cycle',
+    );
+    expect(fetchChannelPosts).not.toHaveBeenCalled();
+    expect(mockForwardFn).not.toHaveBeenCalled();
+
+    scheduler.stop();
+  });
 });

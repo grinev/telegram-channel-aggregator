@@ -10,12 +10,15 @@ async function main(): Promise<void> {
   logger.info(`Fetch mode: ${config.fetchMode}`);
 
   if (config.fetchMode === 'polling') {
-    const { forward } = createConsumerBot(config, logger);
+    const { forward, start, stop } = createConsumerBot(config, logger);
     const scheduler = startPolling(config, forward, logger);
+
+    start();
 
     async function shutdown(signal: string): Promise<void> {
       logger.info(`Received ${signal}, shutting down...`);
       scheduler.stop();
+      stop();
       process.exit(0);
     }
 
@@ -30,7 +33,9 @@ async function main(): Promise<void> {
     const { client, disconnect } = await createProducerClient(config, logger);
     const { forward } = createConsumerBot(config, logger);
 
-    setupMessageListener(client, config.sourceChannels, logger, forward);
+    const { loadChannels: loadChannelsFn } = await import('./poller/whitelist-store.js');
+    const sourceChannels = loadChannelsFn(config.channelsFile, logger);
+    setupMessageListener(client, sourceChannels, logger, forward);
 
     async function shutdown(signal: string): Promise<void> {
       logger.info(`Received ${signal}, shutting down...`);
