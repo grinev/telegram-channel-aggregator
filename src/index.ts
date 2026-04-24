@@ -1,7 +1,5 @@
 import { config } from './config.js';
 import { createLogger } from './shared/logger.js';
-import { createProducerClient } from './producer/client.js';
-import { setupMessageListener } from './producer/listener.js';
 import { createConsumerBot } from './consumer/bot.js';
 import { startPolling } from './poller/scheduler.js';
 
@@ -26,6 +24,9 @@ async function main(): Promise<void> {
 
     logger.info('Aggregator is running in polling mode. Press Ctrl+C to stop.');
   } else {
+    const { createProducerClient } = await import('./producer/client.js');
+    const { setupMessageListener } = await import('./producer/listener.js');
+
     const { client, disconnect } = await createProducerClient(config, logger);
     const { forward } = createConsumerBot(config, logger);
 

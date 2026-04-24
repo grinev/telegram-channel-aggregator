@@ -20,7 +20,8 @@ const sourceChannels = ['@channel1', '@channel2'];
 
 describe('setupMessageListener', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockAddEventHandler.mockReset();
+    mockDispatchFn.mockReset();
   });
 
   it('should register event handler with NewMessage and source channels', () => {
@@ -73,7 +74,7 @@ describe('setupMessageListener', () => {
     const mockEvent = {
       message: {
         post: false,
-        chatId: { toNumber: () => 12345 },
+        chatId: { toNumber: () => 12345, toJSNumber: () => 12345 },
         id: 10,
       },
     };

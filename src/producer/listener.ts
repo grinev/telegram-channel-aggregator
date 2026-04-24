@@ -1,5 +1,5 @@
 import type { TelegramClient } from 'telegram';
-import { NewMessage, NewMessageEvent } from 'telegram/events';
+import { NewMessage, NewMessageEvent } from 'telegram/events/index.js';
 import type { MessageDispatch } from '../shared/types.js';
 import type { Logger } from '../shared/logger.js';
 
@@ -17,6 +17,7 @@ export function setupMessageListener(
     }
 
     try {
+      // @ts-expect-error BigInteger has toNumber at runtime but types differ
       const chatId = message.chatId?.toNumber() ?? 0;
       const messageId = message.id;
 
