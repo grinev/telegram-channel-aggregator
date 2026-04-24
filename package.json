@@ -13,8 +13,7 @@
     "format": "prettier --write src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "session:generate": "tsx scripts/generate-session.ts"
+    "test:coverage": "vitest run --coverage"
   },
   "repository": {
     "type": "git",
@@ -29,8 +28,7 @@
   "homepage": "https://github.com/grinev/telegram-channel-aggregator#readme",
   "dependencies": {
     "dotenv": "^17.4.2",
-    "grammy": "^1.42.0",
-    "telegram": "^2.26.22"
+    "grammy": "^1.42.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

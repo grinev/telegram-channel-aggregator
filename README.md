@@ -76,7 +76,7 @@ Channels are stored in `channels.txt` (configurable via `CHANNELS_FILE`), one ch
 
 ## How It Works
 
-The service uses **polling mode** (the default):
+The service uses **polling mode**:
 
 1. Every 5 minutes, it reads the channel list from `channels.txt`
 2. Fetches the latest posts from each channel via `https://t.me/s/{channel}`
@@ -103,7 +103,6 @@ On subsequent runs:
 | `TELEGRAM_AGGREGATOR_CHANNEL` | Yes | — | Target aggregator channel (username or ID) |
 | `ALLOWED_USER_IDS` | Yes | — | Comma-separated Telegram user IDs that can manage channels |
 | `CHANNELS_FILE` | No | `channels.txt` | Path to the file storing channel list |
-| `FETCH_MODE` | No | `polling` | Mode: `polling` or `event` |
 | `POLL_INTERVAL_MS` | No | `300000` | Polling interval in milliseconds (5 min) |
 | `CHANNEL_STATE_FILE` | No | `channel-state.json` | Path to state file |
 | `LOG_LEVEL` | No | `info` | Logging level: debug, info, warn, error |
@@ -144,18 +143,6 @@ npm run typecheck
 npm run test
 npm run test:watch
 npm run test:coverage
-```
-
-## Event Mode (In Development)
-
-An alternative event-driven mode using MTProto is planned but not yet production-ready. This mode would:
-- Use a real Telegram user account (via GramJS)
-- Listen to `NewMessage` events in real-time
-- Require `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, and `TELEGRAM_STRING_SESSION`
-
-To try it (not recommended for production):
-```env
-FETCH_MODE=event
 ```
 
 ## Tech Stack

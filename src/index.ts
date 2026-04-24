@@ -8,47 +8,23 @@ async function main(): Promise<void> {
   const stateCache = new Map<string, number>();
 
   logger.info('Starting Telegram Channel Aggregator...');
-  logger.info(`Fetch mode: ${config.fetchMode}`);
 
-  if (config.fetchMode === 'polling') {
-    const { forward, start, stop } = createConsumerBot(config, logger, stateCache);
-    const scheduler = startPolling(config, forward, logger, stateCache);
+  const { forward, start, stop } = createConsumerBot(config, logger, stateCache);
+  const scheduler = startPolling(config, forward, logger, stateCache);
 
-    start();
+  start();
 
-    async function shutdown(signal: string): Promise<void> {
-      logger.info(`Received ${signal}, shutting down...`);
-      scheduler.stop();
-      stop();
-      process.exit(0);
-    }
-
-    process.on('SIGINT', () => shutdown('SIGINT'));
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-
-    logger.info('Aggregator is running in polling mode. Press Ctrl+C to stop.');
-  } else {
-    const { createProducerClient } = await import('./producer/client.js');
-    const { setupMessageListener } = await import('./producer/listener.js');
-
-    const { client, disconnect } = await createProducerClient(config, logger);
-    const { forward } = createConsumerBot(config, logger, stateCache);
-
-    const { loadChannels: loadChannelsFn } = await import('./poller/whitelist-store.js');
-    const sourceChannels = loadChannelsFn(config.channelsFile, logger);
-    setupMessageListener(client, sourceChannels, logger, forward);
-
-    async function shutdown(signal: string): Promise<void> {
-      logger.info(`Received ${signal}, shutting down...`);
-      await disconnect();
-      process.exit(0);
-    }
-
-    process.on('SIGINT', () => shutdown('SIGINT'));
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-
-    logger.info('Aggregator is running in event mode. Press Ctrl+C to stop.');
+  async function shutdown(signal: string): Promise<void> {
+    logger.info(`Received ${signal}, shutting down...`);
+    scheduler.stop();
+    stop();
+    process.exit(0);
   }
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+  logger.info('Aggregator is running in polling mode. Press Ctrl+C to stop.');
 }
 
 main().catch((error) => {

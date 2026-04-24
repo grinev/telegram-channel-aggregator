@@ -54,7 +54,9 @@ export function startPolling(
       }
     }
     if (removedChannels.length > 0) {
-      logger.info(`Removed ${removedChannels.length} channel(s) from state: ${removedChannels.join(', ')}`);
+      logger.info(
+        `Removed ${removedChannels.length} channel(s) from state: ${removedChannels.join(', ')}`,
+      );
       saveState(config.channelStateFile, state, logger);
     }
 
@@ -107,10 +109,7 @@ export function startPolling(
           }
 
           await sleep(
-            getRandomDelay(
-              config.delayBetweenChannelsMinMs,
-              config.delayBetweenChannelsMaxMs,
-            ),
+            getRandomDelay(config.delayBetweenChannelsMinMs, config.delayBetweenChannelsMaxMs),
           );
         } catch (error) {
           logger.error(
