@@ -234,4 +234,45 @@ describe('startPolling', () => {
 
     scheduler.stop();
   });
+
+  it('should merge cached state into loaded state', async () => {
+    (loadState as any).mockReturnValue({});
+    (loadChannels as any).mockReturnValue(['cachedchannel']);
+    (fetchChannelPosts as any).mockResolvedValue({
+      postIds: [200, 150],
+      channelUsername: 'cachedchannel',
+    });
+
+    const stateCache = new Map([['cachedchannel', 150]]);
+    const scheduler = startPolling(mockConfig, mockForwardFn, mockLogger, stateCache);
+
+    await sleep(5000);
+
+    expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@cachedchannel', messageId: 200 });
+    expect(saveState).toHaveBeenCalledWith(
+      'test-state.json',
+      expect.objectContaining({ cachedchannel: { lastMessageId: 200 } }),
+      mockLogger,
+    );
+
+    scheduler.stop();
+  }, 15000);
+
+  it('should clear cache entries after processing', async () => {
+    (loadState as any).mockReturnValue({});
+    (loadChannels as any).mockReturnValue(['cachedchannel']);
+    (fetchChannelPosts as any).mockResolvedValue({
+      postIds: [100],
+      channelUsername: 'cachedchannel',
+    });
+
+    const stateCache = new Map([['cachedchannel', 50]]);
+    const scheduler = startPolling(mockConfig, mockForwardFn, mockLogger, stateCache);
+
+    await sleep(5000);
+
+    expect(stateCache.has('cachedchannel')).toBe(false);
+
+    scheduler.stop();
+  }, 15000);
 });

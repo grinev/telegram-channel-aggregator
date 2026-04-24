@@ -5,13 +5,14 @@ import { startPolling } from './poller/scheduler.js';
 
 async function main(): Promise<void> {
   const logger = createLogger(config.logLevel);
+  const stateCache = new Map<string, number>();
 
   logger.info('Starting Telegram Channel Aggregator...');
   logger.info(`Fetch mode: ${config.fetchMode}`);
 
   if (config.fetchMode === 'polling') {
-    const { forward, start, stop } = createConsumerBot(config, logger);
-    const scheduler = startPolling(config, forward, logger);
+    const { forward, start, stop } = createConsumerBot(config, logger, stateCache);
+    const scheduler = startPolling(config, forward, logger, stateCache);
 
     start();
 
@@ -31,7 +32,7 @@ async function main(): Promise<void> {
     const { setupMessageListener } = await import('./producer/listener.js');
 
     const { client, disconnect } = await createProducerClient(config, logger);
-    const { forward } = createConsumerBot(config, logger);
+    const { forward } = createConsumerBot(config, logger, stateCache);
 
     const { loadChannels: loadChannelsFn } = await import('./poller/whitelist-store.js');
     const sourceChannels = loadChannelsFn(config.channelsFile, logger);

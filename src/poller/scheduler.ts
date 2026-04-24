@@ -14,6 +14,7 @@ export function startPolling(
   config: AppConfig,
   forwardFn: (dispatch: MessageDispatch) => void | Promise<void>,
   logger: Logger,
+  stateCache?: Map<string, number>,
 ): PollingScheduler {
   const state = loadState(config.channelStateFile, logger);
   let isRunning = false;
@@ -26,6 +27,13 @@ export function startPolling(
 
     isRunning = true;
     logger.info('Starting polling cycle...');
+
+    if (stateCache && stateCache.size > 0) {
+      for (const [channel, lastMessageId] of stateCache.entries()) {
+        state[channel] = { lastMessageId };
+        logger.info(`Merged cached state for @${channel}: lastMessageId=${lastMessageId}`);
+      }
+    }
 
     const sourceChannels = loadChannels(config.channelsFile, logger);
 
@@ -53,6 +61,9 @@ export function startPolling(
             logger.info(`First run for @${cleanChannel}, saving latest post ID: ${latestId}`);
             state[cleanChannel] = { lastMessageId: latestId };
             saveState(config.channelStateFile, state, logger);
+            if (stateCache) {
+              stateCache.delete(cleanChannel);
+            }
             continue;
           }
 
@@ -73,6 +84,10 @@ export function startPolling(
           if (latestId > lastMessageId) {
             state[cleanChannel] = { lastMessageId: latestId };
             saveState(config.channelStateFile, state, logger);
+          }
+
+          if (stateCache) {
+            stateCache.delete(cleanChannel);
           }
 
           await sleep(DELAY_BETWEEN_CHANNELS_MS);

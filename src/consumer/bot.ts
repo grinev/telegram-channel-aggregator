@@ -2,6 +2,7 @@ import { Bot, GrammyError } from 'grammy';
 import type { AppConfig, MessageDispatch } from '../shared/types.js';
 import type { Logger } from '../shared/logger.js';
 import { loadChannels, addChannel, removeChannel } from '../poller/whitelist-store.js';
+import { fetchChannelPosts } from '../poller/channel-fetcher.js';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,6 +11,7 @@ function sleep(ms: number): Promise<void> {
 export function createConsumerBot(
   config: AppConfig,
   logger: Logger,
+  stateCache: Map<string, number>,
 ): { forward: (dispatch: MessageDispatch) => Promise<void>; start: () => void; stop: () => void } {
   const bot = new Bot(config.botToken);
 
@@ -69,6 +71,19 @@ export function createConsumerBot(
     if (added) {
       logger.info(`Channel @${channel} added by user ${ctx.from.id}`);
       await ctx.reply(`@${channel} added to monitoring.`);
+
+      try {
+        const result = await fetchChannelPosts(channel, logger);
+        if (result.postIds.length > 0) {
+          const latestId = Math.max(...result.postIds);
+          stateCache.set(channel, latestId);
+          logger.info(`Initialized state for @${channel} with lastMessageId=${latestId}`);
+        }
+      } catch (error) {
+        logger.warn(
+          `Failed to fetch initial state for @${channel}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
     } else {
       logger.info(`Channel @${channel} already in the list, user ${ctx.from.id}`);
       await ctx.reply(`@${channel} is already in the list.`);
