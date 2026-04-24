@@ -4,7 +4,9 @@ import { loadState, saveState } from './state-store.js';
 import { loadChannels } from './whitelist-store.js';
 import { fetchChannelPosts } from './channel-fetcher.js';
 
-const DELAY_BETWEEN_CHANNELS_MS = 2000;
+function getRandomDelay(minMs: number, maxMs: number): number {
+  return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+}
 
 export interface PollingScheduler {
   stop: () => void;
@@ -86,6 +88,7 @@ export function startPolling(
 
           for (const messageId of newPostIds) {
             try {
+              await sleep(config.forwardDelayMs);
               await forwardFn({ chatId: `@${cleanChannel}`, messageId });
             } catch (error) {
               logger.error(
@@ -103,7 +106,12 @@ export function startPolling(
             stateCache.delete(cleanChannel);
           }
 
-          await sleep(DELAY_BETWEEN_CHANNELS_MS);
+          await sleep(
+            getRandomDelay(
+              config.delayBetweenChannelsMinMs,
+              config.delayBetweenChannelsMaxMs,
+            ),
+          );
         } catch (error) {
           logger.error(
             `Error polling @${cleanChannel}: ${error instanceof Error ? error.message : String(error)}`,

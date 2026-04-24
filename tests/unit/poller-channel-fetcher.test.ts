@@ -165,4 +165,30 @@ describe('fetchChannelPosts', () => {
 
     vi.restoreAllMocks();
   });
+
+  it('should send randomized browser headers', async () => {
+    const html = `
+      <div class="tgme_widget_message" data-post="testchannel/10">msg1</div>
+    `;
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(html),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await fetchChannelPosts('testchannel', mockLogger);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const fetchCall = mockFetch.mock.calls[0];
+    const headers = fetchCall[1].headers as Record<string, string>;
+
+    expect(headers['User-Agent']).toBeDefined();
+    expect(headers['Accept']).toContain('text/html');
+    expect(headers['Accept-Language']).toBe('en-US,en;q=0.9');
+    expect(headers['Cache-Control']).toBe('max-age=0');
+    expect(headers['Upgrade-Insecure-Requests']).toBe('1');
+
+    vi.restoreAllMocks();
+  });
 });

@@ -107,6 +107,9 @@ On subsequent runs:
 | `POLL_INTERVAL_MS` | No | `300000` | Polling interval in milliseconds (5 min) |
 | `CHANNEL_STATE_FILE` | No | `channel-state.json` | Path to state file |
 | `LOG_LEVEL` | No | `info` | Logging level: debug, info, warn, error |
+| `DELAY_BETWEEN_CHANNELS_MIN_MS` | No | `2000` | Minimum random delay between fetching each channel |
+| `DELAY_BETWEEN_CHANNELS_MAX_MS` | No | `5000` | Maximum random delay between fetching each channel |
+| `FORWARD_DELAY_MS` | No | `1200` | Delay between consecutive `forwardMessage` calls |
 
 ## Important: Adding Bot to Source Channels
 

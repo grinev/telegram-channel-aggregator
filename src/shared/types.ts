@@ -12,6 +12,9 @@ export interface AppConfig {
   fetchMode: string;
   pollIntervalMs: number;
   channelStateFile: string;
+  delayBetweenChannelsMinMs: number;
+  delayBetweenChannelsMaxMs: number;
+  forwardDelayMs: number;
 }
 
 export interface MessageDispatch {

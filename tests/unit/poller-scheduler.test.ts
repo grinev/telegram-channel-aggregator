@@ -27,6 +27,9 @@ const mockConfig = {
   fetchMode: 'polling',
   pollIntervalMs: 300000,
   channelStateFile: 'test-state.json',
+  delayBetweenChannelsMinMs: 0,
+  delayBetweenChannelsMaxMs: 0,
+  forwardDelayMs: 0,
 };
 
 const mockForwardFn = vi.fn();
@@ -45,6 +48,7 @@ function sleep(ms: number): Promise<void> {
 describe('startPolling', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(global.Math, 'random').mockReturnValue(0);
     (loadChannels as any).mockReturnValue(['channel1', 'channel2']);
   });
 
@@ -307,4 +311,94 @@ describe('startPolling', () => {
 
     scheduler.stop();
   }, 15000);
+
+  it('should apply forward delay between consecutive forwards', async () => {
+    vi.useFakeTimers();
+    const testConfig = { ...mockConfig, forwardDelayMs: 1200 };
+    (loadState as any).mockReturnValue({
+      channel1: { lastMessageId: 100 },
+    });
+    (loadChannels as any).mockReturnValue(['channel1']);
+    (fetchChannelPosts as any).mockResolvedValue({
+      postIds: [103, 102, 101],
+      channelUsername: 'channel1',
+    });
+
+    const scheduler = startPolling(testConfig, mockForwardFn, mockLogger);
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(mockForwardFn).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(testConfig.forwardDelayMs);
+    expect(mockForwardFn).toHaveBeenCalledTimes(1);
+    expect(mockForwardFn).toHaveBeenNthCalledWith(1, {
+      chatId: '@channel1',
+      messageId: 101,
+    });
+
+    await vi.advanceTimersByTimeAsync(testConfig.forwardDelayMs);
+    expect(mockForwardFn).toHaveBeenCalledTimes(2);
+    expect(mockForwardFn).toHaveBeenNthCalledWith(2, {
+      chatId: '@channel1',
+      messageId: 102,
+    });
+
+    await vi.advanceTimersByTimeAsync(testConfig.forwardDelayMs);
+    expect(mockForwardFn).toHaveBeenCalledTimes(3);
+    expect(mockForwardFn).toHaveBeenNthCalledWith(3, {
+      chatId: '@channel1',
+      messageId: 103,
+    });
+
+    scheduler.stop();
+    vi.useRealTimers();
+  });
+
+  it('should use random delay between channels based on config', async () => {
+    vi.useFakeTimers();
+    const randomSpy = vi.spyOn(global.Math, 'random').mockReturnValue(0.5);
+    const testConfig = {
+      ...mockConfig,
+      delayBetweenChannelsMinMs: 2000,
+      delayBetweenChannelsMaxMs: 5000,
+      forwardDelayMs: 0,
+    };
+
+    (loadState as any).mockReturnValue({
+      channel1: { lastMessageId: 100 },
+      channel2: { lastMessageId: 200 },
+    });
+    (loadChannels as any).mockReturnValue(['channel1', 'channel2']);
+    (fetchChannelPosts as any)
+      .mockResolvedValueOnce({
+        postIds: [101, 100],
+        channelUsername: 'channel1',
+      })
+      .mockResolvedValueOnce({
+        postIds: [201, 200],
+        channelUsername: 'channel2',
+      });
+
+    const expectedDelay = Math.floor(
+      0.5 *
+        (testConfig.delayBetweenChannelsMaxMs -
+          testConfig.delayBetweenChannelsMinMs +
+          1),
+    ) + testConfig.delayBetweenChannelsMinMs;
+
+    const scheduler = startPolling(testConfig, mockForwardFn, mockLogger);
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchChannelPosts).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(testConfig.forwardDelayMs);
+    expect(mockForwardFn).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(expectedDelay);
+    expect(fetchChannelPosts).toHaveBeenCalledTimes(2);
+
+    scheduler.stop();
+    randomSpy.mockReturnValue(0);
+    vi.useRealTimers();
+  });
 });

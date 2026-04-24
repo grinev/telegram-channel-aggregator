@@ -42,6 +42,36 @@ if (!Number.isInteger(pollIntervalMs) || pollIntervalMs <= 0) {
   throw new Error('POLL_INTERVAL_MS must be a valid positive integer');
 }
 
+const delayBetweenChannelsMinMs = Number(
+  process.env.DELAY_BETWEEN_CHANNELS_MIN_MS ?? '2000',
+);
+const delayBetweenChannelsMaxMs = Number(
+  process.env.DELAY_BETWEEN_CHANNELS_MAX_MS ?? '5000',
+);
+
+if (
+  !Number.isInteger(delayBetweenChannelsMinMs) ||
+  delayBetweenChannelsMinMs < 0 ||
+  !Number.isInteger(delayBetweenChannelsMaxMs) ||
+  delayBetweenChannelsMaxMs < 0
+) {
+  throw new Error(
+    'DELAY_BETWEEN_CHANNELS_MIN_MS and DELAY_BETWEEN_CHANNELS_MAX_MS must be valid non-negative integers',
+  );
+}
+
+if (delayBetweenChannelsMinMs > delayBetweenChannelsMaxMs) {
+  throw new Error(
+    'DELAY_BETWEEN_CHANNELS_MIN_MS must not be greater than DELAY_BETWEEN_CHANNELS_MAX_MS',
+  );
+}
+
+const forwardDelayMs = Number(process.env.FORWARD_DELAY_MS ?? '1200');
+
+if (!Number.isInteger(forwardDelayMs) || forwardDelayMs < 0) {
+  throw new Error('FORWARD_DELAY_MS must be a valid non-negative integer');
+}
+
 const allowedUserIds = process.env
   .ALLOWED_USER_IDS!.split(',')
   .map((id) => Number(id.trim()))
@@ -59,4 +89,7 @@ export const config: AppConfig = {
   fetchMode,
   pollIntervalMs,
   channelStateFile: process.env.CHANNEL_STATE_FILE ?? 'channel-state.json',
+  delayBetweenChannelsMinMs,
+  delayBetweenChannelsMaxMs,
+  forwardDelayMs,
 };
