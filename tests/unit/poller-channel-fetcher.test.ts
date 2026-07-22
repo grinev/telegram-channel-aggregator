@@ -52,16 +52,31 @@ describe('parsePostIds', () => {
     expect(ids).toEqual([100]);
   });
 
-  it('should limit to 5 newest posts', () => {
+  it('should limit to 10 newest posts', () => {
     const html = Array.from(
-      { length: 10 },
+      { length: 25 },
       (_, i) => `<div class="tgme_widget_message" data-post="ch/${i + 1}">${i + 1}</div>`,
     ).join('\n');
 
     const ids = parsePostIds(html);
 
-    expect(ids).toEqual([10, 9, 8, 7, 6]);
-    expect(ids.length).toBe(5);
+    expect(ids.length).toBe(10);
+    expect(ids[0]).toBe(25);
+    expect(ids[9]).toBe(16);
+  });
+
+  it('should extract IDs from media group href links', () => {
+    const html = `
+      <div class="tgme_widget_message" data-post="ch/10">
+        <a href="https://t.me/ch/10?single">img1</a>
+        <a href="https://t.me/ch/11?single">img2</a>
+        <a href="https://t.me/ch/12?single">img3</a>
+      </div>
+    `;
+
+    const ids = parsePostIds(html);
+
+    expect(ids).toEqual([12, 11, 10]);
   });
 });
 

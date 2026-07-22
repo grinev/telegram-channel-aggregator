@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createConsumerBot } from '../../src/consumer/bot.js';
 
 const mockForwardMessage = vi.fn();
+const mockForwardMessages = vi.fn();
 const mockGetChat = vi.fn();
 const mockGetChatMember = vi.fn();
 const mockSetMyCommands = vi.fn();
@@ -33,6 +34,7 @@ vi.mock('grammy', () => {
     botInfo = { id: 999, username: 'testbot' };
     api = {
       forwardMessage: mockForwardMessage,
+      forwardMessages: mockForwardMessages,
       getChat: mockGetChat,
       getChatMember: mockGetChatMember,
       setMyCommands: mockSetMyCommands,
@@ -101,6 +103,7 @@ describe('createConsumerBot', () => {
     vi.clearAllMocks();
     stateCache = new Map();
     mockForwardMessage.mockResolvedValue({ message_id: 99 });
+    mockForwardMessages.mockResolvedValue([{ message_id: 99 }, { message_id: 100 }]);
     mockGetChat.mockResolvedValue({ id: -100123456, title: 'Test Channel' });
     mockGetChatMember.mockResolvedValue({ status: 'administrator' });
     fetchChannelPosts.mockResolvedValue({ postIds: [42], channelUsername: 'testchannel' });
@@ -110,13 +113,24 @@ describe('createConsumerBot', () => {
     mockOnStartCallback = undefined;
   });
 
-  it('should forward message successfully', async () => {
+  it('should forward single message successfully', async () => {
     const { forward } = createConsumerBot(mockConfig, mockLogger, stateCache);
 
     await forward({ chatId: -1001234567890, messageId: 42 });
 
     expect(mockForwardMessage).toHaveBeenCalledWith('@test-channel', -1001234567890, 42);
     expect(mockLogger.info).toHaveBeenCalledWith('Forwarded: channel=-1001234567890, message=42');
+  });
+
+  it('should forward multiple messages (media group) successfully', async () => {
+    const { forward } = createConsumerBot(mockConfig, mockLogger, stateCache);
+
+    await forward({ chatId: -1001234567890, messageIds: [42, 43] });
+
+    expect(mockForwardMessages).toHaveBeenCalledWith('@test-channel', -1001234567890, [42, 43]);
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      'Forwarded: channel=-1001234567890, message=42,43',
+    );
   });
 
   it('should retry on FloodWait and succeed', async () => {

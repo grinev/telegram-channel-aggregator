@@ -88,13 +88,13 @@ export function startPolling(
             .filter((id) => id > lastMessageId)
             .sort((a, b) => a - b);
 
-          for (const messageId of newPostIds) {
+          if (newPostIds.length > 0) {
             try {
               await sleep(config.forwardDelayMs);
-              await forwardFn({ chatId: `@${cleanChannel}`, messageId });
+              await forwardFn({ chatId: `@${cleanChannel}`, messageIds: newPostIds });
             } catch (error) {
               logger.error(
-                `Failed to forward post ${messageId} from @${cleanChannel}: ${error instanceof Error ? error.message : String(error)}`,
+                `Failed to forward post(s) [${newPostIds.join(', ')}] from @${cleanChannel}: ${error instanceof Error ? error.message : String(error)}`,
               );
             }
           }

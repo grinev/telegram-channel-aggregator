@@ -92,10 +92,15 @@ describe('startPolling', () => {
 
     await sleep(5000);
 
-    expect(mockForwardFn).toHaveBeenCalledTimes(3);
-    expect(mockForwardFn).toHaveBeenNthCalledWith(1, { chatId: '@channel1', messageId: 101 });
-    expect(mockForwardFn).toHaveBeenNthCalledWith(2, { chatId: '@channel1', messageId: 102 });
-    expect(mockForwardFn).toHaveBeenNthCalledWith(3, { chatId: '@channel2', messageId: 201 });
+    expect(mockForwardFn).toHaveBeenCalledTimes(2);
+    expect(mockForwardFn).toHaveBeenNthCalledWith(1, {
+      chatId: '@channel1',
+      messageIds: [101, 102],
+    });
+    expect(mockForwardFn).toHaveBeenNthCalledWith(2, {
+      chatId: '@channel2',
+      messageIds: [201],
+    });
 
     scheduler.stop();
   }, 15000);
@@ -141,7 +146,7 @@ describe('startPolling', () => {
     await sleep(5000);
 
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error polling'));
-    expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@channel2', messageId: 201 });
+    expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@channel2', messageIds: [201] });
 
     scheduler.stop();
   }, 15000);
@@ -201,7 +206,7 @@ describe('startPolling', () => {
     await sleep(5000);
 
     expect(mockForwardFn).toHaveBeenCalledTimes(1);
-    expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@channel2', messageId: 201 });
+    expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@channel2', messageIds: [201] });
 
     scheduler.stop();
   }, 15000);
@@ -252,7 +257,7 @@ describe('startPolling', () => {
 
     await sleep(5000);
 
-    expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@cachedchannel', messageId: 200 });
+    expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@cachedchannel', messageIds: [200] });
     expect(saveState).toHaveBeenCalledWith(
       'test-state.json',
       expect.objectContaining({ cachedchannel: { lastMessageId: 200 } }),
@@ -312,7 +317,7 @@ describe('startPolling', () => {
     scheduler.stop();
   }, 15000);
 
-  it('should apply forward delay between consecutive forwards', async () => {
+  it('should apply forward delay before forwarding batch', async () => {
     vi.useFakeTimers();
     const testConfig = { ...mockConfig, forwardDelayMs: 1200 };
     (loadState as any).mockReturnValue({
@@ -333,21 +338,7 @@ describe('startPolling', () => {
     expect(mockForwardFn).toHaveBeenCalledTimes(1);
     expect(mockForwardFn).toHaveBeenNthCalledWith(1, {
       chatId: '@channel1',
-      messageId: 101,
-    });
-
-    await vi.advanceTimersByTimeAsync(testConfig.forwardDelayMs);
-    expect(mockForwardFn).toHaveBeenCalledTimes(2);
-    expect(mockForwardFn).toHaveBeenNthCalledWith(2, {
-      chatId: '@channel1',
-      messageId: 102,
-    });
-
-    await vi.advanceTimersByTimeAsync(testConfig.forwardDelayMs);
-    expect(mockForwardFn).toHaveBeenCalledTimes(3);
-    expect(mockForwardFn).toHaveBeenNthCalledWith(3, {
-      chatId: '@channel1',
-      messageId: 103,
+      messageIds: [101, 102, 103],
     });
 
     scheduler.stop();

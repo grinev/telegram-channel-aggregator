@@ -13,5 +13,6 @@ export interface AppConfig {
 
 export interface MessageDispatch {
   chatId: number | string;
-  messageId: number;
+  messageId?: number;
+  messageIds?: number[];
 }

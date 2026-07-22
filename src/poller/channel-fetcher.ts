@@ -6,7 +6,8 @@ export interface FetchResult {
 }
 
 const FETCH_TIMEOUT_MS = 10000;
-const DATA_POST_REGEX = /data-post="([^"]+\/(\d+))"/g;
+const POST_ID_REGEX =
+  /(?:data-post="[^"]+\/(\d+)"|href="https:\/\/t\.me\/[^/]+\/(\d+)(?:\?[^"]*)?")/gi;
 
 const USER_AGENTS = [
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
@@ -72,19 +73,22 @@ export async function fetchChannelPosts(
 }
 
 export function parsePostIds(html: string): number[] {
-  const ids: number[] = [];
+  const ids = new Set<number>();
   let match: RegExpExecArray | null;
 
-  while ((match = DATA_POST_REGEX.exec(html)) !== null) {
-    const id = parseInt(match[2], 10);
-    if (!isNaN(id)) {
-      ids.push(id);
+  while ((match = POST_ID_REGEX.exec(html)) !== null) {
+    const idStr = match[1] ?? match[2];
+    if (idStr) {
+      const id = parseInt(idStr, 10);
+      if (!isNaN(id)) {
+        ids.add(id);
+      }
     }
   }
 
-  DATA_POST_REGEX.lastIndex = 0;
+  POST_ID_REGEX.lastIndex = 0;
 
-  ids.sort((a, b) => b - a);
+  const sorted = Array.from(ids).sort((a, b) => b - a);
 
-  return ids.slice(0, 5);
+  return sorted.slice(0, 10);
 }

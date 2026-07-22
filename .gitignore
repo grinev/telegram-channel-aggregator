@@ -9,6 +9,7 @@ dist/
 
 channel-state.json
 channel-state.json.tmp
+channels.txt
 
 .kilo/
 .kilocode/

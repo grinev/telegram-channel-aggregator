@@ -142,9 +142,23 @@ export function createConsumerBot(
   });
 
   async function forward(dispatch: MessageDispatch): Promise<void> {
+    const ids =
+      dispatch.messageIds ?? (dispatch.messageId !== undefined ? [dispatch.messageId] : []);
+    if (ids.length === 0) {
+      return;
+    }
+
     try {
-      await bot.api.forwardMessage(config.aggregatorChannel, dispatch.chatId, dispatch.messageId);
-      logger.info(`Forwarded: channel=${dispatch.chatId}, message=${dispatch.messageId}`);
+      if (ids.length === 1) {
+        await bot.api.forwardMessage(config.aggregatorChannel, dispatch.chatId, ids[0]);
+      } else {
+        const CHUNK_SIZE = 100;
+        for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+          const chunk = ids.slice(i, i + CHUNK_SIZE);
+          await bot.api.forwardMessages(config.aggregatorChannel, dispatch.chatId, chunk);
+        }
+      }
+      logger.info(`Forwarded: channel=${dispatch.chatId}, message=${ids.join(',')}`);
     } catch (error) {
       if (error instanceof GrammyError) {
         const retryAfter = error.parameters?.retry_after;
