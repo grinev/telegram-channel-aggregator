@@ -183,7 +183,9 @@ describe('startPolling', () => {
 
     scheduler.stop();
 
-    expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Polling scheduler stopped'));
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Polling scheduler stopped'),
+    );
   });
 
   it('should skip channels with no posts', async () => {
@@ -235,9 +237,7 @@ describe('startPolling', () => {
 
     await sleep(500);
 
-    expect(mockLogger.warn).toHaveBeenCalledWith(
-      'No channels configured, skipping polling cycle',
-    );
+    expect(mockLogger.warn).toHaveBeenCalledWith('No channels configured, skipping polling cycle');
     expect(fetchChannelPosts).not.toHaveBeenCalled();
     expect(mockForwardFn).not.toHaveBeenCalled();
 
@@ -370,12 +370,10 @@ describe('startPolling', () => {
         channelUsername: 'channel2',
       });
 
-    const expectedDelay = Math.floor(
-      0.5 *
-        (testConfig.delayBetweenChannelsMaxMs -
-          testConfig.delayBetweenChannelsMinMs +
-          1),
-    ) + testConfig.delayBetweenChannelsMinMs;
+    const expectedDelay =
+      Math.floor(
+        0.5 * (testConfig.delayBetweenChannelsMaxMs - testConfig.delayBetweenChannelsMinMs + 1),
+      ) + testConfig.delayBetweenChannelsMinMs;
 
     const scheduler = startPolling(testConfig, mockForwardFn, mockLogger);
 
@@ -392,4 +390,36 @@ describe('startPolling', () => {
     randomSpy.mockReturnValue(0);
     vi.useRealTimers();
   });
+
+  it('should skip duplicate posts when deduplication key is in recent keys', async () => {
+    (loadState as any).mockReturnValue({
+      _recentKeys: ['original:500'],
+      channel1: { lastMessageId: 100 },
+      channel2: { lastMessageId: 200 },
+    });
+    (loadChannels as any).mockReturnValue(['channel1', 'channel2']);
+    (fetchChannelPosts as any)
+      .mockResolvedValueOnce({
+        postIds: [101],
+        posts: [{ id: 101, dedupKey: 'original:500' }],
+        channelUsername: 'channel1',
+      })
+      .mockResolvedValueOnce({
+        postIds: [201],
+        posts: [{ id: 201, dedupKey: 'channel2:201' }],
+        channelUsername: 'channel2',
+      });
+
+    const scheduler = startPolling(mockConfig, mockForwardFn, mockLogger);
+
+    await sleep(5000);
+
+    expect(mockForwardFn).toHaveBeenCalledTimes(1);
+    expect(mockForwardFn).toHaveBeenCalledWith({ chatId: '@channel2', messageIds: [201] });
+    expect(mockLogger.info).toHaveBeenCalledWith(
+      expect.stringContaining('Skipping duplicate post 101 from @channel1'),
+    );
+
+    scheduler.stop();
+  }, 15000);
 });

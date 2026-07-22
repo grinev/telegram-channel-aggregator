@@ -1,12 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import type { Logger } from '../shared/logger.js';
+import type { ChannelState, ChannelStateEntry } from '../shared/types.js';
 
-export interface ChannelStateEntry {
-  lastMessageId: number;
-}
-
-export type ChannelState = Record<string, ChannelStateEntry>;
+export type { ChannelState, ChannelStateEntry };
 
 export function loadState(filePath: string, logger: Logger): ChannelState {
   try {

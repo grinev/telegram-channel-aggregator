@@ -27,9 +27,7 @@ describe('loadState', () => {
     const result = loadState(testFilePath, mockLogger);
 
     expect(result).toEqual({});
-    expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.stringContaining('State file not found'),
-    );
+    expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('State file not found'));
   });
 
   it('should load existing state correctly', () => {
@@ -47,9 +45,7 @@ describe('loadState', () => {
     const result = loadState(testFilePath, mockLogger);
 
     expect(result).toEqual({});
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to load state'),
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load state'));
   });
 
   it('should handle array JSON gracefully', () => {
@@ -58,9 +54,7 @@ describe('loadState', () => {
     const result = loadState(testFilePath, mockLogger);
 
     expect(result).toEqual({});
-    expect(mockLogger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('Invalid state format'),
-    );
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid state format'));
   });
 
   it('should handle null JSON gracefully', () => {

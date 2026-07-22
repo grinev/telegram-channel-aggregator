@@ -1,3 +1,22 @@
+export interface ChannelPost {
+  id: number;
+  dedupKey: string;
+}
+
+export interface FetchResult {
+  postIds: number[];
+  posts: ChannelPost[];
+  channelUsername: string;
+}
+
+export interface ChannelStateEntry {
+  lastMessageId: number;
+}
+
+export type ChannelState = Record<string, ChannelStateEntry | string[] | undefined> & {
+  _recentKeys?: string[];
+};
+
 export interface AppConfig {
   botToken: string;
   aggregatorChannel: string;

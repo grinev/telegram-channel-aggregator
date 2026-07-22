@@ -65,9 +65,8 @@ vi.mock('../../src/poller/channel-fetcher.js', () => ({
   fetchChannelPosts: vi.fn(),
 }));
 
-const { loadChannels, addChannel, removeChannel } = await import(
-  '../../src/poller/whitelist-store.js'
-);
+const { loadChannels, addChannel, removeChannel } =
+  await import('../../src/poller/whitelist-store.js');
 const { fetchChannelPosts } = await import('../../src/poller/channel-fetcher.js');
 
 const mockConfig = {
@@ -243,7 +242,9 @@ describe('/add_channel command', () => {
     await mockCommandHandlers['add_channel'](ctx);
 
     expect(stateCache.has('testchannel')).toBe(false);
-    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch initial state'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to fetch initial state'),
+    );
   });
 
   it('should handle duplicate channel', async () => {
@@ -263,9 +264,7 @@ describe('/add_channel command', () => {
     const ctx = createMockContext('nonexistent', 12345);
     await mockCommandHandlers['add_channel'](ctx);
 
-    expect(ctx.reply).toHaveBeenCalledWith(
-      'Channel @nonexistent not found or bot has no access.',
-    );
+    expect(ctx.reply).toHaveBeenCalledWith('Channel @nonexistent not found or bot has no access.');
   });
 
   it('should handle bot not being admin', async () => {

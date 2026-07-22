@@ -1,9 +1,7 @@
 import type { Logger } from '../shared/logger.js';
+import type { ChannelPost, FetchResult } from '../shared/types.js';
 
-export interface FetchResult {
-  postIds: number[];
-  channelUsername: string;
-}
+export type { FetchResult };
 
 const FETCH_TIMEOUT_MS = 10000;
 const POST_ID_REGEX =
@@ -48,7 +46,8 @@ export async function fetchChannelPosts(
     }
 
     const html = await response.text();
-    const postIds = parsePostIds(html);
+    const posts = parsePosts(html, channelUsername);
+    const postIds = posts.map((p) => p.id);
 
     if (postIds.length === 0) {
       logger.warn(`No posts found in ${channelUsername}`);
@@ -58,7 +57,7 @@ export async function fetchChannelPosts(
       );
     }
 
-    return { postIds, channelUsername };
+    return { postIds, posts, channelUsername };
   } catch (error) {
     if (error instanceof DOMException && error.name === 'TimeoutError') {
       logger.error(`Timeout fetching ${url}`);
@@ -91,4 +90,58 @@ export function parsePostIds(html: string): number[] {
   const sorted = Array.from(ids).sort((a, b) => b - a);
 
   return sorted.slice(0, 10);
+}
+
+export function parsePosts(html: string, channelUsername: string): ChannelPost[] {
+  const cleanChannel = channelUsername.replace(/^@/, '').toLowerCase();
+
+  const postRegex = /data-post="([^"/]+)\/(\d+)"/g;
+  const postPositions: Array<{ channel: string; id: number; index: number }> = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = postRegex.exec(html)) !== null) {
+    const id = parseInt(match[2], 10);
+    if (!isNaN(id)) {
+      postPositions.push({ channel: match[1], id, index: match.index });
+    }
+  }
+
+  if (postPositions.length === 0) {
+    const ids = parsePostIds(html);
+    return ids.map((id) => ({ id, dedupKey: cleanChannel ? `${cleanChannel}:${id}` : `${id}` }));
+  }
+
+  const posts: ChannelPost[] = [];
+  const seenIds = new Set<number>();
+
+  for (let i = 0; i < postPositions.length; i++) {
+    const current = postPositions[i];
+    if (seenIds.has(current.id)) {
+      continue;
+    }
+    seenIds.add(current.id);
+
+    const startIndex = current.index;
+    const endIndex = i < postPositions.length - 1 ? postPositions[i + 1].index : html.length;
+    const blockHtml = html.substring(startIndex, endIndex);
+
+    const fwdMatch =
+      /class="tgme_widget_message_forwarded_from_name"[^>]*href="https:\/\/t\.me\/([^/]+)\/(\d+)"/i.exec(
+        blockHtml,
+      ) ||
+      /href="https:\/\/t\.me\/([^/]+)\/(\d+)"[^>]*class="tgme_widget_message_forwarded_from_name"/i.exec(
+        blockHtml,
+      );
+
+    let dedupKey: string;
+    if (fwdMatch) {
+      dedupKey = `${fwdMatch[1].toLowerCase()}:${fwdMatch[2]}`;
+    } else {
+      dedupKey = `${cleanChannel}:${current.id}`;
+    }
+
+    posts.push({ id: current.id, dedupKey });
+  }
+
+  return posts.sort((a, b) => b.id - a.id).slice(0, 10);
 }

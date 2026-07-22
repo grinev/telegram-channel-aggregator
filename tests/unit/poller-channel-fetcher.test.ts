@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchChannelPosts, parsePostIds } from '../../src/poller/channel-fetcher.js';
+import { fetchChannelPosts, parsePostIds, parsePosts } from '../../src/poller/channel-fetcher.js';
 
 const mockLogger = {
   debug: vi.fn(),
@@ -7,6 +7,42 @@ const mockLogger = {
   warn: vi.fn(),
   error: vi.fn(),
 };
+
+describe('parsePosts', () => {
+  it('should generate dedupKey for original posts', () => {
+    const html = `
+      <div class="tgme_widget_message" data-post="durov/471">message 1</div>
+      <div class="tgme_widget_message" data-post="durov/472">message 2</div>
+    `;
+
+    const posts = parsePosts(html, 'durov');
+
+    expect(posts).toEqual([
+      { id: 472, dedupKey: 'durov:472' },
+      { id: 471, dedupKey: 'durov:471' },
+    ]);
+  });
+
+  it('should extract original channel and post ID for forwarded posts', () => {
+    const html = `
+      <div class="tgme_widget_message" data-post="meduzalive/100">
+        <div class="tgme_widget_message_forwarded_from">
+          Forwarded from <a class="tgme_widget_message_forwarded_from_name" href="https://t.me/plottwist_m/4037">Plot</a>
+        </div>
+      </div>
+      <div class="tgme_widget_message" data-post="meduzalive/101">
+        regular post
+      </div>
+    `;
+
+    const posts = parsePosts(html, 'meduzalive');
+
+    expect(posts).toEqual([
+      { id: 101, dedupKey: 'meduzalive:101' },
+      { id: 100, dedupKey: 'plottwist_m:4037' },
+    ]);
+  });
+});
 
 describe('parsePostIds', () => {
   it('should extract post IDs from HTML with data-post attributes', () => {
@@ -123,9 +159,7 @@ describe('fetchChannelPosts', () => {
     const result = await fetchChannelPosts('empty_channel', mockLogger);
 
     expect(result.postIds).toEqual([]);
-    expect(mockLogger.warn).toHaveBeenCalledWith(
-      expect.stringContaining('No posts found'),
-    );
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('No posts found'));
 
     vi.restoreAllMocks();
   });
@@ -139,9 +173,7 @@ describe('fetchChannelPosts', () => {
     vi.stubGlobal('fetch', mockFetch);
 
     await expect(fetchChannelPosts('nonexistent', mockLogger)).rejects.toThrow('HTTP 404');
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to fetch'),
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch'));
 
     vi.restoreAllMocks();
   });
@@ -151,9 +183,7 @@ describe('fetchChannelPosts', () => {
     vi.stubGlobal('fetch', mockFetch);
 
     await expect(fetchChannelPosts('testchannel', mockLogger)).rejects.toThrow('Network error');
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to fetch'),
-    );
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch'));
 
     vi.restoreAllMocks();
   });
@@ -174,9 +204,7 @@ describe('fetchChannelPosts', () => {
     const result = await fetchChannelPosts('mychannel', mockLogger);
 
     expect(result.postIds).toEqual([7, 6, 5]);
-    expect(mockLogger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Fetched 3 post(s)'),
-    );
+    expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Fetched 3 post(s)'));
 
     vi.restoreAllMocks();
   });
